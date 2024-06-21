@@ -1,35 +1,48 @@
 #!/bin/bash
 
+# Defina os nomes de usuário e senha aqui
+oldusername="usuario_antigo"
+newusername="usuario_novo"
+newpassword="senha_nova"
+
 # Verifica se o script está sendo executado como root
 if [ "$(id -u)" -ne 0 ]; then
-    echo "Este script deve ser executado como root" 
-    exit 1
+  echo "Este script deve ser executado como root. Use sudo."
+  exit 1
 fi
 
-# Novo nome de usuário e senha
-NOVO_USUARIO="novo_usuario"
-NOVA_SENHA="123"
+# Verifica se o usuário atual existe
+if ! id "$oldusername" &>/dev/null; then
+  echo "O usuário $oldusername não existe."
+  exit 1
+fi
 
-# Muda o nome do usuário
-usermod -l "$NOVO_USUARIO" root
-if [ $? -eq 0 ]; then
-    echo "Nome de usuário alterado com sucesso para $NOVO_USUARIO"
+# Altera o nome de usuário
+usermod -l "$newusername" "$oldusername"
+
+# Altera o diretório home do usuário
+usermod -d "/home/$newusername" -m "$newusername"
+
+# Altera o nome do grupo
+groupmod -n "$newusername" "$oldusername"
+
+# Altera a senha do usuário
+echo "$newusername:$newpassword" | chpasswd
+
+# Modifica o arquivo .bashrc do novo usuário para alterar o prompt
+bashrc_path="/home/$newusername/.bashrc"
+
+if [ -f "$bashrc_path" ]; then
+  echo "Modificando o prompt no arquivo .bashrc"
+  echo "PS1='$newusername@\h:\w\$ '" >> "$bashrc_path"
 else
-    echo "Erro ao alterar o nome de usuário"
-    exit 1
+  echo "Arquivo .bashrc não encontrado para o usuário $newusername. Criando novo .bashrc."
+  echo "PS1='$newusername@\h:\w\$ '" > "$bashrc_path"
 fi
 
-# Define a nova senha para o usuário
-echo -e "$NOVA_SENHA\n$NOVA_SENHA" | passwd "$NOVO_USUARIO"
-if [ $? -eq 0 ]; then
-    echo "Senha alterada com sucesso para o usuário $NOVO_USUARIO"
-else
-    echo "Erro ao alterar a senha para o usuário $NOVO_USUARIO"
-    exit 1
-fi
+# Ajusta as permissões do arquivo .bashrc
+chown "$newusername:$newusername" "$bashrc_path"
 
-# Atualiza a exibição do nome de usuário no prompt do terminal
-echo "PS1='\[\033[01;32m\]$NOVO_USUARIO\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '" > /root/.bashrc
-source /root/.bashrc
+echo "Alterações concluídas com sucesso."
 
-echo "Operação concluída com sucesso"
+
