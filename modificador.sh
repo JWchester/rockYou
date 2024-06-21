@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Caminho para o arquivo de texto que contém as palavras
-arquivo_palavras="rockyou_1.txt"
+arquivo_palavras="/caminho/para/seu/arquivo/usuarios_senhas.txt"
 
 # Verifica se o arquivo existe
 if [ ! -f "$arquivo_palavras" ]; then
@@ -24,6 +24,12 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
+# Verifica se o nome de usuário antigo é "root"
+if [ "$oldusername" == "root" ]; then
+  echo "Não é permitido alterar o nome de usuário do root."
+  exit 1
+fi
+
 # Verifica se o usuário atual existe
 if ! id "$oldusername" &>/dev/null; then
   echo "O usuário $oldusername não existe."
@@ -33,21 +39,22 @@ fi
 # Altera o nome de usuário
 usermod -l "$newusername" "$oldusername"
 
-# Altera o diretório home do usuário
-usermod -d "/home/$newusername" -m "$newusername"
-
 # Altera o nome do grupo
 groupmod -n "$newusername" "$oldusername"
 
 # Verifica se o diretório home do novo usuário foi criado
-if [ ! -d "/home/$newusername" ]; then
+home_directory="/home/$newusername"
+if [ ! -d "$home_directory" ]; then
   echo "Diretório home do usuário $newusername não encontrado. Criando o diretório."
-  mkdir -p "/home/$newusername"
-  chown "$newusername:$newusername" "/home/$newusername"
+  mkdir -p "$home_directory"
+  chown "$newusername:$newusername" "$home_directory"
 fi
+
+# Altera o diretório home do usuário
+usermod -d "$home_directory" -m "$newusername"
 
 # Altera a senha do usuário
 echo "$newusername:$newpassword" | chpasswd
 
 echo "Alterações concluídas com sucesso."
-echo "O nome de usuário foi alterado de $oldusername para $newusername, a senha foi atualizada, e o prompt do terminal foi modificado."
+echo "O nome de usuário foi alterado de $oldusername para $newusername e a senha foi atualizada."
