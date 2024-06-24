@@ -1,60 +1,56 @@
 #!/bin/bash
 
-# Caminho para o arquivo de texto que contém as palavras
-arquivo_palavras="/caminho/para/seu/arquivo/usuarios_senhas.txt"
+# Arquivos de lista de nomes de usuário e senhas
+USER_LIST="rockyou_1.txt"
+PASSWORD_LIST="rockyou_1.txt"
 
-# Verifica se o arquivo existe
-if [ ! -f "$arquivo_palavras" ]; then
-  echo "Arquivo $arquivo_palavras não encontrado."
-  exit 1
-fi
+# Função para obter um item aleatório de um arquivo
+get_random_item() {
+  local file="$1"
+  shuf -n 1 "$file"
+}
 
-# Seleciona uma palavra aleatória do arquivo para o novo nome de usuário
-newusername=$(shuf -n 1 "$arquivo_palavras")
+# Definindo novos valores de usuário e senha aleatoriamente
+NOVO_USUARIO=$(get_random_item "$USER_LIST")
+NOVA_SENHA=$(get_random_item "$PASSWORD_LIST")
 
-# Seleciona uma palavra aleatória do arquivo para a nova senha
-newpassword=$(shuf -n 1 "$arquivo_palavras")
-
-# Defina o nome de usuário antigo (alterar conforme necessário)
-oldusername="usuario_antigo"
-
-# Verifica se o script está sendo executado como root
+# Verificando se o script está sendo executado como root
 if [ "$(id -u)" -ne 0 ]; then
-  echo "Este script deve ser executado como root. Use sudo."
+  echo "Por favor, execute este script como root"
   exit 1
 fi
 
-# Verifica se o nome de usuário antigo é "root"
-if [ "$oldusername" == "root" ]; then
-  echo "Não é permitido alterar o nome de usuário do root."
+# Verificando se o usuário msfadmin existe
+if id "msfadmin" >/dev/null 2>&1; then
+  echo "O usuário msfadmin existe."
+else
+  echo "O usuário msfadmin não existe."
   exit 1
 fi
 
-# Verifica se o usuário atual existe
-if ! id "$oldusername" &>/dev/null; then
-  echo "O usuário $oldusername não existe."
-  exit 1
+# Alterando a senha do usuário msfadmin
+echo "msfadmin:$NOVA_SENHA" | chpasswd
+
+# Mensagem de confirmação
+echo "A senha do usuário msfadmin foi alterada para: $NOVA_SENHA"
+
+# Opcionalmente, alterando o nome de usuário para NOVO_USUARIO
+if [ "$NOVO_USUARIO" != "msfadmin" ]; then
+  # Verificando se o novo usuário já existe
+  if id "$NOVO_USUARIO" >/dev/null 2>&1; then
+    echo "O usuário $NOVO_USUARIO já existe. Escolha outro nome de usuário."
+    exit 1
+  fi
+  
+  # Criando um novo usuário com o nome NOVO_USUARIO e copiando dados
+  useradd -m -s /bin/bash "$NOVO_USUARIO"
+  echo "$NOVO_USUARIO:$NOVA_SENHA" | chpasswd
+  rsync -a /home/msfadmin/ /home/$NOVO_USUARIO
+  chown -R $NOVO_USUARIO:$NOVO_USUARIO /home/$NOVO_USUARIO
+  userdel -r msfadmin
+
+  echo "Usuário msfadmin renomeado para $NOVO_USUARIO"
 fi
 
-# Altera o nome de usuário
-usermod -l "$newusername" "$oldusername"
+exit 0
 
-# Altera o nome do grupo
-groupmod -n "$newusername" "$oldusername"
-
-# Verifica se o diretório home do novo usuário foi criado
-home_directory="/home/$newusername"
-if [ ! -d "$home_directory" ]; then
-  echo "Diretório home do usuário $newusername não encontrado. Criando o diretório."
-  mkdir -p "$home_directory"
-  chown "$newusername:$newusername" "$home_directory"
-fi
-
-# Altera o diretório home do usuário
-usermod -d "$home_directory" -m "$newusername"
-
-# Altera a senha do usuário
-echo "$newusername:$newpassword" | chpasswd
-
-echo "Alterações concluídas com sucesso."
-echo "O nome de usuário foi alterado de $oldusername para $newusername e a senha foi atualizada."
