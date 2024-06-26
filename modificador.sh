@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Arquivo de lista de senhas
-PASSWORD_LIST="rockyou_1.txt"
+PASSWORD_LIST="rockyou.txt"
 
 # Função para obter um item aleatório de um arquivo
 get_random_item() {
