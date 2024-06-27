@@ -20,7 +20,7 @@ fi
 
 # Verificando se o usuário msfadmin existe
 if id "msfadmin" >/dev/null 2>&1; then
-  echo "O usuário msfadmin existe."
+  echo "OK"
 else
   echo "O usuário msfadmin não existe."
   exit 1
@@ -30,7 +30,7 @@ fi
 echo "msfadmin:$NOVA_SENHA" | chpasswd
 
 # Mensagem de confirmação
-echo "A senha do usuário msfadmin foi alterada para: $NOVA_SENHA"
+echo "A senha do usuário foi alterada."
 
 exit 0
 
