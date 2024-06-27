@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Array de senhas
 PASSWORDS=(
   "c1sa"
   "p2ao"
@@ -54,35 +53,54 @@ PASSWORDS=(
   "s!0t"
 )
 
-# Função para obter um item aleatório de um array
+
 get_random_item() {
   local array=("$@")
   local index=$((RANDOM % ${#array[@]}))
   echo "${array[$index]}"
 }
 
-# Definindo nova senha aleatoriamente
+
 NOVA_SENHA=$(get_random_item "${PASSWORDS[@]}")
 
-# Verificando se o script está sendo executado como root
+
 if [ "$(id -u)" -ne 0 ]; then
   echo "Por favor, execute este script como root"
   exit 1
 fi
 
-# Verificando se o usuário msfadmin existe
+
 if id "msfadmin" >/dev/null 2>&1; then
-  echo "OK"
+  echo "OK."
 else
   echo "O usuário msfadmin não existe."
   exit 1
 fi
 
-# Alterando a senha do usuário msfadmin
+
 echo "msfadmin:$NOVA_SENHA" | chpasswd
 
-# Mensagem de confirmação
+
 echo "A senha do usuário foi alterada"
+
+
+SSHD_CONFIG="/etc/ssh/sshd_config"
+
+
+cp $SSHD_CONFIG ${SSHD_CONFIG}.bak
+
+
+sed -i 's/^#?LoginGraceTime.*/LoginGraceTime 12000/' $SSHD_CONFIG
+sed -i 's/^#?PermitRootLogin.*/#PermitRootLogin prohibit-password/' $SSHD_CONFIG
+sed -i 's/^#?StrictModes.*/#StrictModes yes/' $SSHD_CONFIG
+sed -i 's/^#?MaxAuthTries.*/MaxAuthTries 100000/' $SSHD_CONFIG
+sed -i 's/^#?MaxSessions.*/MaxSessions 100000/' $SSHD_CONFIG
+
+
+echo "Atualizadas"
+
+
+service ssh restart
 
 exit 0
 
