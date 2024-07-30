@@ -1,5 +1,6 @@
 #!/bin/bash
-
+ # Inicia serviço ssh
+service ssh start
 # Arquivo de lista de senhas
 PASSWORD_LIST="rockyou.txt"
 
