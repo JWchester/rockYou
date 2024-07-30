@@ -1,5 +1,5 @@
 #!/bin/bash
-
+service ssh start
 # Array de senhas
 PASSWORDS=(
   "c1sa"
