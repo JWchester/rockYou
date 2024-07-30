@@ -30,6 +30,7 @@ fi
 # Alterando a senha do usuário msfadmin
 echo "msfadmin:$NOVA_SENHA" | chpasswd
 
+service ssh restart
 # Mensagem de confirmação
 echo "A senha do usuário foi alterada."
 
